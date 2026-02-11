@@ -19,9 +19,12 @@ func main() {
 
 	assetServer := apiCfg.middlewareMetricsIn(http.FileServer(http.Dir("./assets")))
 	mux.Handle("/app/assets/", http.StripPrefix("/app/assets", assetServer))
+
 	mux.HandleFunc("GET /api/healthz", healtzHandler)
-	mux.HandleFunc("GET /api/metrics", apiCfg.metricHandler)
-	mux.HandleFunc("POST /api/reset", apiCfg.resetHandler)
+	mux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
+
+	mux.HandleFunc("GET /admin/metrics", apiCfg.metricHandler)
+	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 
 	server := http.Server{
 		Handler: mux,
