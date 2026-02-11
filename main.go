@@ -1,16 +1,27 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+	"sync/atomic"
+)
+
+type apiConfig struct {
+	fileserverHits atomic.Int32
+}
 
 func main() {
 	mux := http.NewServeMux()
 
-	fileServer := http.FileServer(http.Dir("."))
+	apiCfg := &apiConfig{}
+
+	fileServer := apiCfg.middlewareMetricsIn(http.FileServer(http.Dir(".")))
 	mux.Handle("/app", http.StripPrefix("/app", fileServer))
 
-	assetServer := http.FileServer(http.Dir("./assets"))
-	mux.Handle("/app/assets", http.StripPrefix("/app/assets", assetServer))
-	mux.HandleFunc("/healthz", healtzHandler)
+	assetServer := apiCfg.middlewareMetricsIn(http.FileServer(http.Dir("./assets")))
+	mux.Handle("/app/assets/", http.StripPrefix("/app/assets", assetServer))
+	mux.HandleFunc("GET /api/healthz", healtzHandler)
+	mux.HandleFunc("GET /api/metrics", apiCfg.metricHandler)
+	mux.HandleFunc("POST /api/reset", apiCfg.resetHandler)
 
 	server := http.Server{
 		Handler: mux,
