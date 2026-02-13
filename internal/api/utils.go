@@ -8,18 +8,26 @@ import (
 	"strings"
 )
 
-func (cfg *ApiConfig) HealtzHandler(w http.ResponseWriter, _ *http.Request) {
+func (cfg *APIConfig) HealtzHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(200)
 	w.Write([]byte("OK"))
 }
 
-func (cfg *ApiConfig) ResetHandler(w http.ResponseWriter, _ *http.Request) {
+func (cfg *APIConfig) ResetHandler(w http.ResponseWriter, r *http.Request) {
+	if cfg.Platform != "dev" {
+		w.WriteHeader(403)
+		return
+	}
+	err := cfg.Database.ResetUsers(r.Context())
+	if err != nil {
+		RespondWithError(w, 500, "Can't reset users", err)
+	}
 	cfg.FileserverHits.Store(0)
 	w.WriteHeader(200)
 }
 
-func (cfg *ApiConfig) ValidateChirpHandler(w http.ResponseWriter, r *http.Request) {
+func (cfg *APIConfig) ValidateChirpHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
 	}
@@ -32,23 +40,24 @@ func (cfg *ApiConfig) ValidateChirpHandler(w http.ResponseWriter, r *http.Reques
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		respondWithError(w, 500, "Something went wrong")
+		RespondWithError(w, 500, "Something went wrong", err)
 		return
 	}
 
 	if len(params.Body) > 140 {
-		respondWithError(w, 400, "Chirp is too long")
+		RespondWithError(w, 400, "Chirp is too long", err)
 		return
 	}
 
 	returnData := returnVals{
 		ClanedBody: validateProfane(params.Body),
 	}
-	respondWithJSON(w, 200, returnData)
+	RespondWithJSON(w, 200, returnData)
 }
 
 // Response
-func respondWithError(w http.ResponseWriter, code int, msg string) {
+
+func RespondWithError(w http.ResponseWriter, code int, msg string, err error) {
 	type errorVal struct {
 		Error string `json:"error"`
 	}
@@ -56,6 +65,7 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 	errorBody := errorVal{
 		Error: msg,
 	}
+	log.Println("Respond with error:", err)
 	dat, err := json.Marshal(errorBody)
 	if err != nil {
 		log.Printf("Error marshaling json: %v", err)
@@ -63,14 +73,13 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 		return
 	}
 
-	log.Printf("Error decoding params: %s", msg)
 	w.WriteHeader(code)
 	w.Header().Add("Content-Type", "application/json")
 
 	w.Write(dat)
 }
 
-func respondWithJSON(w http.ResponseWriter, code int, payload any) {
+func RespondWithJSON(w http.ResponseWriter, code int, payload any) {
 	dat, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("Error marshaling json: %v", err)

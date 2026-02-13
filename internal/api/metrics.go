@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func (cfg *ApiConfig) MetricHandler(w http.ResponseWriter, _ *http.Request) {
+func (cfg *APIConfig) MetricHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Add("Content-Type", "text/html")
 	w.WriteHeader(200)
 	hits := cfg.FileserverHits.Load()
