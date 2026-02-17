@@ -27,34 +27,6 @@ func (cfg *APIConfig) ResetHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func (cfg *APIConfig) ValidateChirpHandler(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Body string `json:"body"`
-	}
-
-	type returnVals struct {
-		ClanedBody string `json:"cleaned_body"`
-	}
-
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err := decoder.Decode(&params)
-	if err != nil {
-		RespondWithError(w, 500, "Something went wrong", err)
-		return
-	}
-
-	if len(params.Body) > 140 {
-		RespondWithError(w, 400, "Chirp is too long", err)
-		return
-	}
-
-	returnData := returnVals{
-		ClanedBody: validateProfane(params.Body),
-	}
-	RespondWithJSON(w, 200, returnData)
-}
-
 // Response
 
 func RespondWithError(w http.ResponseWriter, code int, msg string, err error) {
@@ -94,7 +66,8 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload any) {
 }
 
 // Validation
-func validateProfane(s string) string {
+
+func ValidateProfane(s string) string {
 	bannedWords := []string{"kerfuffle", "sharbert", "fornax"}
 	splitted := strings.Split(s, " ")
 	for i, v := range splitted {

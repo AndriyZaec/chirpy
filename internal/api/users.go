@@ -36,7 +36,7 @@ func (cfg *APIConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 
 	decoder := json.NewDecoder(r.Body)
 	params := &parameters{}
-	err := decoder.Decode(&params)
+	err := decoder.Decode(params)
 	if err != nil {
 		RespondWithError(w, 500, "Something went wrong", err)
 		return

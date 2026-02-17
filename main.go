@@ -33,8 +33,8 @@ func main() {
 	mux.Handle("/app/assets/", http.StripPrefix("/app/assets", assetServer))
 
 	mux.HandleFunc("GET /api/healthz", apiCfg.HealtzHandler)
-	mux.HandleFunc("POST /api/validate_chirp", apiCfg.ValidateChirpHandler)
 	mux.HandleFunc("POST /api/users", apiCfg.CreateUserHandler)
+	mux.HandleFunc("POST /api/chirps", apiCfg.CreateChirpHandler)
 
 	mux.HandleFunc("GET /admin/metrics", apiCfg.MetricHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.ResetHandler)
