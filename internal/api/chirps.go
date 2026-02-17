@@ -62,3 +62,18 @@ func (cfg *APIConfig) CreateChirpHandler(w http.ResponseWriter, r *http.Request)
 	chirp := mapDBChirpToDomain(dbChirp)
 	RespondWithJSON(w, 201, chirp)
 }
+
+func (cfg *APIConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
+	dbChirps, err := cfg.Database.GetAllChirps(r.Context())
+	if err != nil {
+		RespondWithError(w, 500, "Something went wrong", err)
+		return
+	}
+
+	chirps := make([]Chirp, len(dbChirps))
+	for i, v := range dbChirps {
+		chirps[i] = mapDBChirpToDomain(v)
+	}
+
+	RespondWithJSON(w, 200, chirps)
+}
