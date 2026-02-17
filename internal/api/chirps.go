@@ -63,7 +63,7 @@ func (cfg *APIConfig) CreateChirpHandler(w http.ResponseWriter, r *http.Request)
 	RespondWithJSON(w, 201, chirp)
 }
 
-func (cfg *APIConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
+func (cfg *APIConfig) GetAllChirps(w http.ResponseWriter, r *http.Request) {
 	dbChirps, err := cfg.Database.GetAllChirps(r.Context())
 	if err != nil {
 		RespondWithError(w, 500, "Something went wrong", err)
@@ -76,4 +76,20 @@ func (cfg *APIConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondWithJSON(w, 200, chirps)
+}
+
+func (cfg *APIConfig) GetChirp(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		RespondWithError(w, 400, "bad id format", err)
+		return
+	}
+
+	dbChirp, err := cfg.Database.GetChirp(r.Context(), id)
+	if err != nil {
+		RespondWithError(w, 404, "Some thing wrong", err)
+		return
+	}
+
+	RespondWithJSON(w, 200, mapDBChirpToDomain(dbChirp))
 }
