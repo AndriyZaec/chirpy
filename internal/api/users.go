@@ -1,3 +1,4 @@
+// Package api contains users realted API handlers
 package api
 
 import (
@@ -13,11 +14,11 @@ import (
 // Model
 
 type User struct {
-	ID             uuid.UUID `json:"id"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	Email          string    `json:"email"`
-	HashedPassword string    `json:"hashed_password"`
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+	Token     string    `json:"token"`
 }
 
 func mapDBUserToDomain(u database.User) User {
@@ -68,8 +69,9 @@ func (cfg *APIConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 
 func (cfg *APIConfig) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email            string `json:"email"`
+		Password         string `json:"password"`
+		ExpiresInSeconds *int   `json:"expires_in_seconds"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -90,7 +92,19 @@ func (cfg *APIConfig) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, 401, "Password incorect or user does not exist", err)
 		return
 	}
+
+	var expires time.Duration
+	if params.ExpiresInSeconds == nil || *params.ExpiresInSeconds > 3600 {
+		expires = 3600 * time.Second
+	} else {
+		expires = time.Duration(*params.ExpiresInSeconds) * time.Second
+	}
+	token, err := auth.MakeJWT(dbUser.ID, cfg.JWTSecret, expires)
+	if err != nil {
+		RespondWithError(w, 500, "Cannot respond with token", err)
+	}
 	user := mapDBUserToDomain(dbUser)
+	user.Token = token
 
 	RespondWithJSON(w, 200, user)
 }

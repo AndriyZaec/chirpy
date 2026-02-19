@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -75,5 +76,22 @@ func TestJWT_BadSecret(t *testing.T) {
 	_, err = auth.ValidateJWT(token, badSecret)
 	if err == nil {
 		t.Fatal("No error when bad secret is using, should be error")
+	}
+}
+
+func TestGetToken_Success(t *testing.T) {
+	expectedToken := "some_super_token_that_expected_after_bearer"
+	bearer := "Bearer " + expectedToken
+
+	header := http.Header{}
+	header.Add("Authorization", bearer)
+
+	token, err := auth.GetBearerToken(header)
+	if err != nil {
+		t.Fatalf("unexpected error while getting token: %v", err)
+	}
+
+	if token != expectedToken {
+		t.Fatalf("expected tokens be equal")
 	}
 }

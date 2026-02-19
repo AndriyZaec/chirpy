@@ -33,9 +33,13 @@ func mapDBChirpToDomain(c database.Chirp) Chirp {
 // Handlers
 
 func (cfg *APIConfig) CreateChirpHandler(w http.ResponseWriter, r *http.Request) {
+	userID, ok := UserIDFromRequest(r)
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized", fmt.Errorf("not found user"))
+	}
+
 	type parameters struct {
-		Body   string    `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -52,7 +56,7 @@ func (cfg *APIConfig) CreateChirpHandler(w http.ResponseWriter, r *http.Request)
 
 	dbChirp, err := cfg.Database.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   ValidateProfane(params.Body),
-		UserID: params.UserID,
+		UserID: userID,
 	})
 	if err != nil {
 		RespondWithError(w, 500, "Something went wrong", err)

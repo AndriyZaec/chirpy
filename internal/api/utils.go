@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 func (cfg *APIConfig) HealtzHandler(w http.ResponseWriter, _ *http.Request) {
@@ -77,4 +79,12 @@ func ValidateProfane(s string) string {
 		}
 	}
 	return strings.Join(splitted, " ")
+}
+
+// Helpers
+
+func UserIDFromRequest(r *http.Request) (uuid.UUID, bool) {
+	v := r.Context().Value(ctxUserIDKey)
+	id, ok := v.(uuid.UUID)
+	return id, ok
 }

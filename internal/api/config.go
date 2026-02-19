@@ -10,11 +10,13 @@ type APIConfig struct {
 	Database       *database.Queries
 	FileserverHits atomic.Int32
 	Platform       string
+	JWTSecret      string
 }
 
-func New(db *database.Queries, platform string) *APIConfig {
+func New(db *database.Queries, platform string, jwtSecret string) *APIConfig {
 	return &APIConfig{
-		Database: db,
-		Platform: platform,
+		Database:  db,
+		Platform:  platform,
+		JWTSecret: jwtSecret,
 	}
 }

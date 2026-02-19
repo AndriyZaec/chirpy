@@ -16,6 +16,8 @@ func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
+	jwtSecret := os.Getenv("JWT_SECRET")
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Cannot connect to DB")
@@ -25,7 +27,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	apiCfg := api.New(dbQueries, platform)
+	apiCfg := api.New(dbQueries, platform, jwtSecret)
 	fileServer := apiCfg.MiddlewareMetricsIn(http.FileServer(http.Dir(".")))
 	mux.Handle("/app", http.StripPrefix("/app", fileServer))
 
@@ -34,7 +36,10 @@ func main() {
 
 	mux.HandleFunc("GET /api/healthz", apiCfg.HealtzHandler)
 	mux.HandleFunc("POST /api/users", apiCfg.CreateUserHandler)
-	mux.HandleFunc("POST /api/chirps", apiCfg.CreateChirpHandler)
+	mux.Handle(
+		"POST /api/chirps",
+		apiCfg.AuthMiddleware(http.HandlerFunc(apiCfg.CreateChirpHandler)),
+	)
 	mux.HandleFunc("GET /api/chirps", apiCfg.GetAllChirps)
 	mux.HandleFunc("GET /api/chirps/{id}", apiCfg.GetChirp)
 	mux.HandleFunc("POST /api/login", apiCfg.LoginHandler)
