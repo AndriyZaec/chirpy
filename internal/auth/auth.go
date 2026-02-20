@@ -1,6 +1,9 @@
+// Package auth contains auth related functionality
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strings"
@@ -61,4 +64,13 @@ func GetBearerToken(headers http.Header) (string, error) {
 
 	token := strings.TrimPrefix(authHeader, "Bearer ")
 	return token, nil
+}
+
+func MakeRefreshToken() (string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", fmt.Errorf("error generating refresh token: %v", err)
+	}
+	return hex.EncodeToString(b), nil
 }

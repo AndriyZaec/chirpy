@@ -67,6 +67,11 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload any) {
 	w.Write(dat)
 }
 
+func RespondEmpty(w http.ResponseWriter, code int) {
+	w.WriteHeader(code)
+	w.Header().Add("Content-Type", "application/json")
+}
+
 // Validation
 
 func ValidateProfane(s string) string {

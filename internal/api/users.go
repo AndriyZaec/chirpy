@@ -14,11 +14,12 @@ import (
 // Model
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Token     string    `json:"token"`
+	ID           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Email        string    `json:"email"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
 }
 
 func mapDBUserToDomain(u database.User) User {
@@ -69,9 +70,8 @@ func (cfg *APIConfig) CreateUserHandler(w http.ResponseWriter, r *http.Request) 
 
 func (cfg *APIConfig) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email            string `json:"email"`
-		Password         string `json:"password"`
-		ExpiresInSeconds *int   `json:"expires_in_seconds"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -93,18 +93,69 @@ func (cfg *APIConfig) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var expires time.Duration
-	if params.ExpiresInSeconds == nil || *params.ExpiresInSeconds > 3600 {
-		expires = 3600 * time.Second
-	} else {
-		expires = time.Duration(*params.ExpiresInSeconds) * time.Second
-	}
-	token, err := auth.MakeJWT(dbUser.ID, cfg.JWTSecret, expires)
+	token, err := auth.MakeJWT(dbUser.ID, cfg.JWTSecret, time.Hour)
 	if err != nil {
 		RespondWithError(w, 500, "Cannot respond with token", err)
+		return
 	}
+
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		RespondWithError(w, 500, "Something went wrong", err)
+		return
+	}
+
+	dbRefreshToken, err := cfg.Database.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token:     refreshToken,
+		UserID:    dbUser.ID,
+		ExpiresAt: time.Now().Add(time.Hour * 24 * 60),
+	})
+	if err != nil {
+		RespondWithError(w, 500, "Something went wrong", err)
+		return
+	}
+
 	user := mapDBUserToDomain(dbUser)
 	user.Token = token
+	user.RefreshToken = dbRefreshToken.Token
 
 	RespondWithJSON(w, 200, user)
+}
+
+func (cfg *APIConfig) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
+	refreshToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	user, err := cfg.Database.GetUserByRefreshToken(r.Context(), refreshToken)
+	if err != nil {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	token, err := auth.MakeJWT(user.ID, cfg.JWTSecret, time.Hour)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Something went wrong", err)
+		return
+	}
+
+	RespondWithJSON(w, 200, map[string]string{"token": token})
+}
+
+func (cfg *APIConfig) RevokeHandler(w http.ResponseWriter, r *http.Request) {
+	refreshToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	err = cfg.Database.RevokeToken(r.Context(), refreshToken)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Something went wrong", err)
+		return
+	}
+
+	RespondEmpty(w, http.StatusNoContent)
 }
