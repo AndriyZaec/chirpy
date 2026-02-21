@@ -91,9 +91,42 @@ func (cfg *APIConfig) GetChirp(w http.ResponseWriter, r *http.Request) {
 
 	dbChirp, err := cfg.Database.GetChirp(r.Context(), id)
 	if err != nil {
-		RespondWithError(w, 404, "Some thing wrong", err)
+		RespondWithError(w, http.StatusNotFound, "Chirp does not exists", err)
 		return
 	}
 
 	RespondWithJSON(w, 200, mapDBChirpToDomain(dbChirp))
+}
+
+func (cfg *APIConfig) DeleteChirp(w http.ResponseWriter, r *http.Request) {
+	chirpID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		RespondWithError(w, 400, "bad id format", err)
+		return
+	}
+
+	userID, ok := UserIDFromRequest(r)
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized", fmt.Errorf("not found user"))
+		return
+	}
+
+	chirp, err := cfg.Database.GetChirp(r.Context(), chirpID)
+	if err != nil {
+		RespondWithError(w, http.StatusNotFound, "Chirp not found", err)
+		return
+	}
+
+	if userID != chirp.UserID {
+		RespondWithError(w, http.StatusForbidden, "Forbidden", err)
+		return
+	}
+
+	err = cfg.Database.DeleteChirp(r.Context(), chirpID)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Something went wrong", err)
+		return
+	}
+
+	RespondEmpty(w, http.StatusNoContent)
 }
