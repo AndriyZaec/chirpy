@@ -37,6 +37,11 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", apiCfg.HealtzHandler)
 	mux.HandleFunc("POST /api/users", apiCfg.CreateUserHandler)
 	mux.Handle(
+		"PUT /api/users",
+		apiCfg.AuthMiddleware(http.HandlerFunc(apiCfg.UpdateUser)),
+	)
+
+	mux.Handle(
 		"POST /api/chirps",
 		apiCfg.AuthMiddleware(http.HandlerFunc(apiCfg.CreateChirpHandler)),
 	)

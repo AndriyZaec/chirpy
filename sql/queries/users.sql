@@ -12,6 +12,11 @@ SELECT *
 FROM users
 WHERE email = $1;
 
+-- name: GetUserById :one
+SELECT * 
+FROM users 
+WHERE id = $1;
+
 -- name: GetUserByRefreshToken :one
 SELECT users.*, 
 refresh_token.token as refresh_token, 
@@ -21,3 +26,9 @@ INNER JOIN refresh_token
 ON users.id = refresh_token.user_id
 WHERE refresh_token.token = $1 
 AND refresh_token.expires_at > NOW();
+
+-- name: UpdateUser :one
+UPDATE users
+SET email = $2, hashed_password = $3, updated_at = NOW()
+WHERE id = $1
+RETURNING *;

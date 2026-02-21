@@ -3,6 +3,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -158,4 +159,49 @@ func (cfg *APIConfig) RevokeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondEmpty(w, http.StatusNoContent)
+}
+
+func (cfg *APIConfig) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	id, ok := UserIDFromRequest(r)
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized", fmt.Errorf("not found user"))
+	}
+
+	dbUser, err := cfg.Database.GetUserById(r.Context(), id)
+	if err != nil {
+		RespondWithError(w, http.StatusNotFound, "User not found", err)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := &parameters{}
+	err = decoder.Decode(params)
+	if err != nil {
+		RespondWithError(w, 500, "Something went wrong", err)
+		return
+	}
+
+	hashedPass, err := auth.HashPassword(params.Password)
+	if err != nil {
+		RespondWithError(w, 500, "Something went wrong", err)
+		return
+	}
+
+	dbUpdatedUser, err := cfg.Database.UpdateUser(r.Context(), database.UpdateUserParams{
+		ID:             dbUser.ID,
+		Email:          params.Email,
+		HashedPassword: hashedPass,
+	})
+	if err != nil {
+		RespondWithError(w, 500, "Something went wrong", err)
+		return
+	}
+
+	userResp := mapDBUserToDomain(dbUpdatedUser)
+	RespondWithJSON(w, 200, userResp)
 }
