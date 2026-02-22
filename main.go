@@ -17,6 +17,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
 	jwtSecret := os.Getenv("JWT_SECRET")
+	polkaKey := os.Getenv("POLKA_KEY")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -27,7 +28,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	apiCfg := api.New(dbQueries, platform, jwtSecret)
+	apiCfg := api.New(dbQueries, platform, jwtSecret, polkaKey)
 	fileServer := apiCfg.MiddlewareMetricsIn(http.FileServer(http.Dir(".")))
 	mux.Handle("/app", http.StripPrefix("/app", fileServer))
 
@@ -54,6 +55,8 @@ func main() {
 	mux.HandleFunc("POST /api/login", apiCfg.LoginHandler)
 	mux.HandleFunc("POST /api/refresh", apiCfg.RefreshTokenHandler)
 	mux.HandleFunc("POST /api/revoke", apiCfg.RevokeHandler)
+
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.PolkaWebhooksHandler)
 
 	mux.HandleFunc("GET /admin/metrics", apiCfg.MetricHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.ResetHandler)

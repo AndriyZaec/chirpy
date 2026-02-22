@@ -11,12 +11,14 @@ type APIConfig struct {
 	FileserverHits atomic.Int32
 	Platform       string
 	JWTSecret      string
+	PolkaKey       string
 }
 
-func New(db *database.Queries, platform string, jwtSecret string) *APIConfig {
+func New(db *database.Queries, platform string, jwtSecret string, polkaKey string) *APIConfig {
 	return &APIConfig{
 		Database:  db,
 		Platform:  platform,
 		JWTSecret: jwtSecret,
+		PolkaKey:  polkaKey,
 	}
 }

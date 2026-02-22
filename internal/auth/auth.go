@@ -62,7 +62,17 @@ func GetBearerToken(headers http.Header) (string, error) {
 		return "", fmt.Errorf("no atuh header found")
 	}
 
-	token := strings.TrimPrefix(authHeader, "Bearer ")
+	token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer"))
+	return token, nil
+}
+
+func GetAPIToken(headers http.Header) (string, error) {
+	authHeader := headers.Get("Authorization")
+	if authHeader == "" {
+		return "", fmt.Errorf("no atuh header found")
+	}
+
+	token := strings.TrimSpace(strings.TrimPrefix(authHeader, "ApiKey"))
 	return token, nil
 }
 
