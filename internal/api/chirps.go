@@ -67,8 +67,16 @@ func (cfg *APIConfig) CreateChirpHandler(w http.ResponseWriter, r *http.Request)
 	RespondWithJSON(w, 201, chirp)
 }
 
-func (cfg *APIConfig) GetAllChirps(w http.ResponseWriter, r *http.Request) {
-	dbChirps, err := cfg.Database.GetAllChirps(r.Context())
+func (cfg *APIConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
+	userID, err := uuid.Parse(r.URL.Query().Get("author_id"))
+	var dbChirps []database.Chirp
+
+	if (err == nil && userID != uuid.UUID{}) {
+		dbChirps, err = cfg.Database.GetChirpsByUser(r.Context(), userID)
+	} else {
+		dbChirps, err = cfg.Database.GetAllChirps(r.Context())
+	}
+
 	if err != nil {
 		RespondWithError(w, 500, "Something went wrong", err)
 		return

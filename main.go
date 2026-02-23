@@ -46,7 +46,7 @@ func main() {
 		"POST /api/chirps",
 		apiCfg.AuthMiddleware(http.HandlerFunc(apiCfg.CreateChirpHandler)),
 	)
-	mux.HandleFunc("GET /api/chirps", apiCfg.GetAllChirps)
+	mux.HandleFunc("GET /api/chirps", apiCfg.GetChirps)
 	mux.HandleFunc("GET /api/chirps/{id}", apiCfg.GetChirp)
 	mux.Handle(
 		"DELETE /api/chirps/{id}",
