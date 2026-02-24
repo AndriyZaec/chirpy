@@ -379,6 +379,8 @@ POST /api/polka/webhooks
 
 Receives webhook events from Polka service (e.g., premium upgrades).
 
+> **Note:** Polka is a fictional service created for this webhooks tutorial. In a real application, this would integrate with an actual payment/subscription service.
+
 **Request Body:**
 ```json
 {
