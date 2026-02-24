@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/andriyzaec/chirpy/internal/database"
@@ -86,6 +87,14 @@ func (cfg *APIConfig) GetChirps(w http.ResponseWriter, r *http.Request) {
 	for i, v := range dbChirps {
 		chirps[i] = mapDBChirpToDomain(v)
 	}
+
+	sort.Slice(chirps, func(i, j int) bool {
+		if r.URL.Query().Get("sort") == "asc" {
+			return chirps[i].CreatedAt.Before(chirps[j].CreatedAt)
+		} else {
+			return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+		}
+	})
 
 	RespondWithJSON(w, 200, chirps)
 }
